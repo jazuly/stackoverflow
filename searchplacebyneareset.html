@@ -1,0 +1,12 @@
+<ion-content class="mapContainer">
+  <div #map style="height:100%;"></div>
+  <div class="mapSearch">
+    <ion-searchbar [(ngModel)]="search" (ionChange)="searchChanged()" padding-horizontal placeholder="Search Place..."></ion-searchbar>
+    <ion-list no-border padding-horizontal [hidden]="!search.length">
+      <ion-item (click)="searchPlace(result)" *ngFor="let result of searchResults">
+        <ion-icon name='planet' slot="start"></ion-icon>
+        <ion-label>{{ result.structured_formatting.main_text }} <span class="textMuteMap">{{ result.structured_formatting.secondary_text }}</span></ion-label>
+      </ion-item>
+    </ion-list>
+  </div>
+</ion-content>
