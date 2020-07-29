@@ -12,15 +12,18 @@ if ($reduceBalance) {
         $user->update(['package_id' => 1]);
 
         $trashServer = $user->server()->oldest()->get();
-        $serverIdx = $trashServer->count()-1;
+        $serverIdx = 0;
 
-        if ($trashServer->count() > 1) {
-            $getOldestServer = $user->server()->oldest()->limit($serverIdx)->delete();
-        }
+        if ($trashServer->count() > 0) {
+            if ($trashServer->count() > 1) {
+                $serverIdx = $trashServer->count()-1;
+                $getOldestServer = $user->server()->oldest()->limit($serverIdx)->delete();
+            }
 
-        $trashSite = $trashServer[$serverIdx]->site()->get();
-        if ($trashSite->count() > 2) {
-            $getOldestSite = $trashServer[$serverIdx]->site()->oldest()->limit($trashSite->count()-2)->delete();
+            $trashSite = $trashServer[$serverIdx]->site()->get();
+            if ($trashSite->count() > 2) {
+                $getOldestSite = $trashServer[$serverIdx]->site()->oldest()->limit($trashSite->count()-2)->delete();
+            }
         }
 
         $dataMail = [];
