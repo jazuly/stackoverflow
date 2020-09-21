@@ -1,3 +1,35 @@
+<template>
+  <v-sheet class="px-5 d-flex align-center justify-start" width="100%" height="100%">
+    <v-row>
+      <v-col cols="9">
+        <v-row>
+          <v-col class="pt-0" cols="12">
+            <v-sheet class="video-ctr d-flex flex-wrap align-center justify-center" max-height="60vh" width="100%">
+              <v-sheet class="text-center" id="videoGrid"></v-sheet>
+            </v-sheet>
+          </v-col>
+          <v-col v-if="myStream" class="text-center pb-0" cols="12">
+            <v-btn class="mr-3" fab large @click="audioAction">
+              <v-icon color="red" v-text="this.mediaStatus.audio ? 'mdi-microphone' : 'mdi-microphone-off'" />
+            </v-btn>
+            <v-btn class="mr-3" fab large @click="videoAction">
+              <v-icon color="red" v-text="this.mediaStatus.video ? 'mdi-video' : 'mdi-video-off'" />
+            </v-btn>
+            <v-btn class="mr-3" fab large @click="screenSharing">
+              <v-icon color="red" v-text="`mdi-monitor-multiple`" />
+            </v-btn>
+            <v-btn class="mr-3" fab large><v-icon color="red" v-text="`mdi-phone-hangup`" /></v-btn>
+          </v-col>
+        </v-row>
+      </v-col>
+      <v-col cols="3">
+        <v-card class="content-container" color="red" width="100%" height="100%" flat tile></v-card>
+      </v-col>
+    </v-row>
+  </v-sheet>
+</template>
+
+<script>
 import io from 'socket.io-client';
 export default {
   name: 'index',
@@ -6,6 +38,7 @@ export default {
     videoGrid: null,
     myPeerID: null,
     myStream: null,
+    myScreen: null,
     mediaStatus: {
       audio: true, video: true
     }
@@ -23,6 +56,7 @@ export default {
             myVideo.className = 'mr-3 mb-3'
       this.videoGrid = document.getElementById('videoGrid')
 
+      // Owner Room Side
       navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true
@@ -35,13 +69,20 @@ export default {
 
           call.answer(stream)
           call.on('stream', userVideoStream => {
+            this.$store.dispatch('userConnected', { name: call.peer, id: call.peer })
+            this.$store.dispatch('userStream', { id: call.peer, stream: call })
             this.addVideoStream(video, userVideoStream)
+          })
+
+          call.on('close', () => {
+            video.remove()
           })
         })
 
         socket.on('userConnected', dataUser => {
           this.$store.dispatch('userConnected', dataUser)
           this.connectToNewUser(dataUser, stream)
+          if (this.myScreen) this.$peer.call(dataUser.id, this.myScreen)
         })
       })
 
@@ -66,6 +107,7 @@ export default {
       this.videoGrid.appendChild(video)
     },
 
+    // Participant Room Side
     connectToNewUser(dataUser, stream) {
       const call = this.$peer.call(dataUser.id, stream)
       const video = document.createElement('video')
@@ -83,8 +125,11 @@ export default {
 
     screenSharing() {
       navigator.mediaDevices.getDisplayMedia().then(stream => {
-        console.log(this.myPeerID, stream)
-        this.$peer.call(this.myPeerID, stream)
+        this.myScreen = stream
+        const keys = Object.keys(this.$store.state.users)
+        keys.forEach((value) => {
+          this.$peer.call(value, this.myScreen)
+        });
       })
     },
 
@@ -99,3 +144,16 @@ export default {
     }
   },
 }
+</script>
+
+<style scoped>
+*>>>video {
+  width: 300px;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2), 0px 4px 5px 0px rgba(0, 0, 0, 0.14), 0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+.video-ctr {
+  overflow-y: auto;
+}
+</style>
